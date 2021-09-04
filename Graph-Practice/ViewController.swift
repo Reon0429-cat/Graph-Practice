@@ -10,36 +10,44 @@ import ScrollableGraphView
 
 final class ViewController: UIViewController {
     
-    private var linePlotData = [Int](1...100).shuffled().map { Double($0) }
-    private var linePlotData2 = [Int](1...100).shuffled().map { Double($0) }
-    private var linePlotData3 = [Int](1...100).shuffled().map { Double($0) }
-    private var linePlotData4 = [Int](1...100).shuffled().map { Double($0) }
-    private var linePlotData5 = [Int](1...100).shuffled().map { Double($0) }
-
+    private let lines: [(color: UIColor, identifier: String, data: [Double])] = [
+        (color: .red, identifier: "id1", data: [Int](1...100).shuffled().map { Double($0) }),
+        (color: .blue, identifier: "id2", data: [Int](1...100).shuffled().map { Double($0) }),
+        (color: .green, identifier: "id3", data: [Int](1...100).shuffled().map { Double($0) }),
+        (color: .purple, identifier: "id4", data: [Int](1...100).shuffled().map { Double($0) }),
+        (color: .yellow, identifier: "id5", data: [Int](1...100).shuffled().map { Double($0) }),
+    ]
+    
+    private var graphView: ScrollableGraphView!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        self.view.backgroundColor = UIColor(red: 0.6, green: 0.6, blue: 0.6, alpha: 0.3)
+        createGraphView()
+        lines.forEach { createLineDot(color: $0.color,
+                                      identifier: $0.identifier) }
+        createReferenceLines()
+        self.view.addSubview(graphView)
         
+    }
+    
+    private func createGraphView() {
         let frame = CGRect(x: 0,
-                           y: 100,
+                           y: 200,
                            width: self.view.frame.width,
-                           height: self.view.frame.height - 200)
-        let graphView = ScrollableGraphView(frame: frame, dataSource: self)
-        graphView.rangeMin = linePlotData.min() ?? 0
-        graphView.rangeMax = linePlotData.max() ?? 0
+                           height: self.view.frame.height - 400)
+        graphView = ScrollableGraphView(frame: frame, dataSource: self)
+        graphView.rangeMin = lines[0].data.min() ?? 0
+        graphView.rangeMax = lines[0].data.max() ?? 0
         graphView.backgroundFillColor = .clear
         graphView.shouldAnimateOnStartup = true
         graphView.shouldAdaptRange = true
         graphView.topMargin = 50
         graphView.dataPointSpacing = 50
         graphView.bottomMargin = 20
-        
-        let linePlot = createLine(color: .systemRed, identifier: "plotIdentifier")
-        let dotPlot = createDot(color: .systemRed, identifier: "plotIdentifier")
-        let linePlot2 = createLine(color: .systemBlue, identifier: "plotIdentifier2")
-        let dotPlot2 = createDot(color: .systemBlue, identifier: "plotIdentifier2")
-        
+    }
+    
+    private func createReferenceLines() {
         let referenceLines = ReferenceLines()
         referenceLines.referenceLineLabelFont = .boldSystemFont(ofSize: 15)
         referenceLines.dataPointLabelFont = .boldSystemFont(ofSize: 15)
@@ -48,15 +56,14 @@ final class ViewController: UIViewController {
         referenceLines.positionType = .absolute
         referenceLines.includeMinMax = false
         referenceLines.absolutePositions = [Int](0...100).filter { $0 % 10 == 0 }.map { Double($0) }
-        
         graphView.addReferenceLines(referenceLines: referenceLines)
+    }
+    
+    private func createLineDot(color: UIColor, identifier: String) {
+        let linePlot = createLine(color: color, identifier: identifier)
+        let dotPlot = createDot(color: color, identifier: identifier)
         graphView.addPlot(plot: linePlot)
-        graphView.addPlot(plot: linePlot2)
         graphView.addPlot(plot: dotPlot)
-        graphView.addPlot(plot: dotPlot2)
-        
-        self.view.addSubview(graphView)
-        
     }
     
     private func createLine(color: UIColor, identifier: String) -> LinePlot {
@@ -83,14 +90,12 @@ extension ViewController: ScrollableGraphViewDataSource {
     
     func value(forPlot plot: Plot,
                atIndex pointIndex: Int) -> Double {
-        switch plot.identifier {
-            case "plotIdentifier":
-                return linePlotData[pointIndex]
-            case "plotIdentifier2":
-                return linePlotData2[pointIndex]
-            default:
-                return 0.0
+        for line in lines {
+            if plot.identifier == line.identifier {
+                return line.data[pointIndex]
+            }
         }
+        return 0.0
     }
     
     func label(atIndex pointIndex: Int) -> String {
@@ -98,7 +103,7 @@ extension ViewController: ScrollableGraphViewDataSource {
     }
     
     func numberOfPoints() -> Int {
-        return linePlotData.count
+        return lines[0].data.count
     }
     
 }
